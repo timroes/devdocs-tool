@@ -1,6 +1,6 @@
-import React from "react";
-import ReactDOM from "react-dom";
-import compareVersions from "compare-versions";
+import React from 'react';
+import ReactDOM from 'react-dom';
+import compareVersions from 'compare-versions';
 import {
   EuiCallOut,
   EuiCode,
@@ -10,15 +10,15 @@ import {
   EuiFlexItem,
   EuiPage,
   EuiSelect
-} from "@elastic/eui";
+} from '@elastic/eui';
 
 // test
 
-import "@elastic/eui/dist/eui_theme_light.css";
-import "./styles.css";
+import '@elastic/eui/dist/eui_theme_light.css';
+import './styles.css';
 
-const DEV_DOC_LABEL = "release_note:dev_docs";
-const VERSIONS = ["v6.5.0", "v6.6.0", "v7.0.0"];
+const DEV_DOC_LABEL = 'release_note:dev_docs';
+const VERSIONS = ['v6.5.0', 'v6.6.0', 'v7.0.0'];
 const SEMVER_REGEX = /^v(\d+)\.(\d+)\.(\d+)$/;
 const DEVDOC_REGEX = /# Dev[- ]?Docs?\s+([\S\s]*)/i;
 
@@ -59,7 +59,7 @@ class App extends React.Component {
 
   renderIssue = (issue, index) => {
     return (
-      `${index > 0 ? "\n\n" : ""}` +
+      `${index > 0 ? '\n\n' : ''}` +
       `${issue.text}\n\n` +
       `*via [#${issue.pr}](https://github.com/elastic/kibana/pull/${issue.pr})*`
     );
@@ -99,7 +99,7 @@ class App extends React.Component {
               version.
             </p>
             <p>
-              To add content to the dev docs, attach the{" "}
+              To add content to the dev docs, attach the{' '}
               <EuiCode>{DEV_DOC_LABEL}</EuiCode>
               label to a PR or issue and add the content, that should be added
               to the dev docs behind a <EuiCode># Dev Docs</EuiCode> header in
@@ -113,7 +113,7 @@ class App extends React.Component {
 
   render() {
     const versionOptions = [
-      { value: "", text: "Select version", disabled: true },
+      { value: '', text: 'Select version', disabled: true },
       ...VERSIONS.map(ver => ({ text: ver, value: ver }))
     ];
 
@@ -147,5 +147,5 @@ class App extends React.Component {
   }
 }
 
-const rootElement = document.getElementById("root");
+const rootElement = document.getElementById('root');
 ReactDOM.render(<App />, rootElement);
