@@ -12,8 +12,6 @@ import {
   EuiSelect
 } from '@elastic/eui';
 
-// adding my test back
-
 import '@elastic/eui/dist/eui_theme_light.css';
 import './styles.css';
 
