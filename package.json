@@ -1,0 +1,24 @@
+{
+  "name": "dev-doc-tool",
+  "version": "1.0.0",
+  "description": null,
+  "keywords": [
+    "kibana"
+  ],
+  "main": "src/index.js",
+  "dependencies": {
+    "@elastic/eui": "3.8.0",
+    "compare-versions": "3.4.0",
+    "moment": "2.22.2",
+    "react": "16.4.2",
+    "react-dom": "16.4.2",
+    "react-scripts": "1.1.4"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject"
+  }
+}
