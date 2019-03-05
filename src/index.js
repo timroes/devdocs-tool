@@ -16,7 +16,7 @@ import '@elastic/eui/dist/eui_theme_light.css';
 import './styles.css';
 
 const DEV_DOC_LABEL = 'release_note:dev_docs';
-const VERSIONS = ['v6.5.0', 'v6.6.0', 'v6.7.0', 'v7.0.0'];
+const VERSIONS = ['v6.5.0', 'v6.6.0', 'v6.7.0', 'v7.0.0', 'v7.1.0', 'v7.2.0'];
 const SEMVER_REGEX = /^v(\d+)\.(\d+)\.(\d+)$/;
 const DEVDOC_REGEX = /# Dev[- ]?Docs?\s+([\S\s]*)/i;
 
