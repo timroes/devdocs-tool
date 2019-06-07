@@ -9,20 +9,22 @@ import {
   EuiFlexGroup,
   EuiFlexItem,
   EuiPage,
-  EuiSelect
+  EuiSelect,
+  EuiProgress,
 } from '@elastic/eui';
 
 import '@elastic/eui/dist/eui_theme_light.css';
 import './styles.css';
 
 const DEV_DOC_LABEL = 'release_note:dev_docs';
-const VERSIONS = ['v6.5.0', 'v6.6.0', 'v6.7.0', 'v7.0.0', 'v7.1.0', 'v7.2.0'];
+const VERSIONS = ['v6.8.0', 'v7.0.0', 'v7.1.0', 'v7.2.0', 'v7.3.0', 'v7.4.0'];
 const SEMVER_REGEX = /^v(\d+)\.(\d+)\.(\d+)$/;
 const DEVDOC_REGEX = /# Dev[- ]?Docs?\s+([\S\s]*)/i;
 
 class App extends React.Component {
   state = {
-    issues: []
+    issues: [],
+    isLoading: false,
   };
 
   async loadIssues(version) {
@@ -43,6 +45,7 @@ class App extends React.Component {
 
   selectVersion = async ev => {
     const version = ev.target.value;
+    this.setState({ isLoading: true });
     const rawIssues = await this.loadIssues(version);
     const issues = rawIssues.map(issue => {
       const devDocSection = DEVDOC_REGEX.exec(issue.body);
@@ -52,12 +55,14 @@ class App extends React.Component {
         text: devDocSection && devDocSection[1]
       };
     });
-    this.setState({ issues });
+    this.setState({ issues, isLoading: false });
   };
 
   renderIssue = (issue, index) => {
+    const textBeginsWithTitle = issue.text.trim().startsWith('#');
     return (
       `${index > 0 ? '\n\n' : ''}` +
+      `${!textBeginsWithTitle ? `## ${issue.title}\n\n` : ''}` +
       `${issue.text}\n\n` +
       `*via [#${issue.pr}](https://github.com/elastic/kibana/pull/${issue.pr})*`
     );
@@ -116,27 +121,31 @@ class App extends React.Component {
     ];
 
     const brokenIssues = this.state.issues.filter(issue => !issue.text);
+    const markdown = this.state.issues
+      .filter(issue => issue.text)
+      .map(this.renderIssue)
+      .join();
 
     return (
       <EuiPage className="App">
+        { this.state.isLoading && <EuiProgress position="fixed" color="accent" size="xs" /> }
         <EuiFlexGroup direction="column">
-          <EuiFlexItem grow={false}>
-            <EuiSelect options={versionOptions} onChange={this.selectVersion} />
-          </EuiFlexItem>
+            <EuiFlexItem grow={false}>
+              <EuiSelect options={versionOptions} onChange={this.selectVersion} />
+            </EuiFlexItem>
           {brokenIssues.length > 0 && this.renderBrokenIssues(brokenIssues)}
           {this.state.issues.length === 0 && this.renderNoIssues()}
           {this.state.issues.length > 0 && (
             <EuiFlexItem>
-              <EuiCodeBlock
-                className="App__markdown"
-                fontSize="m"
-                color="dark"
-                paddingSize="s"
-              >
-                {this.state.issues
-                  .filter(issue => issue.text)
-                  .map(this.renderIssue)}
-              </EuiCodeBlock>
+                <EuiCodeBlock
+                  className="App__markdown"
+                  fontSize="m"
+                  color="dark"
+                  paddingSize="s"
+                  isCopyable={true}
+                >
+                  {markdown}
+                </EuiCodeBlock>
             </EuiFlexItem>
           )}
         </EuiFlexGroup>
