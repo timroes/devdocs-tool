@@ -13,13 +13,14 @@ import {
   EuiProgress,
 } from '@elastic/eui';
 
+import { extractContent } from './utils';
+
 import '@elastic/eui/dist/eui_theme_light.css';
 import './styles.css';
 
 const DEV_DOC_LABEL = 'release_note:dev_docs';
 const VERSIONS = ['v6.8.0', 'v7.0.0', 'v7.1.0', 'v7.2.0', 'v7.3.0', 'v7.4.0'];
 const SEMVER_REGEX = /^v(\d+)\.(\d+)\.(\d+)$/;
-const DEVDOC_REGEX = /# Dev[- ]?Docs?\s+([\S\s]*)/i;
 
 class App extends React.Component {
   state = {
@@ -48,11 +49,11 @@ class App extends React.Component {
     this.setState({ isLoading: true });
     const rawIssues = await this.loadIssues(version);
     const issues = rawIssues.map(issue => {
-      const devDocSection = DEVDOC_REGEX.exec(issue.body);
+      const text = extractContent(issue.body);
       return {
         pr: issue.number,
         title: issue.title,
-        text: devDocSection && devDocSection[1]
+        text,
       };
     });
     this.setState({ issues, isLoading: false });
