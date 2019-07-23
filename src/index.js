@@ -44,7 +44,6 @@ class App extends React.Component {
       q: `repo:elastic/kibana label:${DEV_DOC_LABEL} label:${version}`,
     });
     const items = await octokit.paginate(options);
-    debugger;
     return items.filter(issue => {
       const versions = issue.labels
         .filter(label => label.name.match(SEMVER_REGEX))
@@ -63,7 +62,6 @@ class App extends React.Component {
     this.setState({ isLoading: true });
     const rawIssues = await this.loadIssues(version);
     const issues = rawIssues.map(issue => {
-      debugger;
       const text = extractContent(issue.body);
       return {
         pr: issue.number,
