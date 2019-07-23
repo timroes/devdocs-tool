@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import compareVersions from 'compare-versions';
+import Octokit from '@octokit/rest';
 import {
   EuiCallOut,
   EuiCode,
@@ -10,6 +11,7 @@ import {
   EuiFlexItem,
   EuiPage,
   EuiSelect,
+  EuiSwitch,
   EuiProgress,
 } from '@elastic/eui';
 
@@ -22,16 +24,22 @@ const DEV_DOC_LABEL = 'release_note:dev_docs';
 const VERSIONS = ['v6.8.0', 'v7.0.0', 'v7.1.0', 'v7.2.0', 'v7.3.0', 'v7.4.0'];
 const SEMVER_REGEX = /^v(\d+)\.(\d+)\.(\d+)$/;
 
+const octokit = new Octokit();
+
 class App extends React.Component {
   state = {
     issues: [],
     isLoading: false,
+    showOnlyClosed: true,
   };
 
   async loadIssues(version) {
-    const url = `https://api.github.com/search/issues?q=repo:elastic/kibana%20label:${DEV_DOC_LABEL}%20label:${version}`;
-    const items = await fetch(url).then(response => response.json());
-    return items.items.filter(issue => {
+    const options = octokit.search.issuesAndPullRequests.endpoint.merge({
+      q: `repo:elastic/kibana label:${DEV_DOC_LABEL} label:${version}`,
+    });
+    const items = await octokit.paginate(options);
+    debugger;
+    return items.filter(issue => {
       const versions = issue.labels
         .filter(label => label.name.match(SEMVER_REGEX))
         .map(label => label.name);
@@ -44,14 +52,22 @@ class App extends React.Component {
     });
   }
 
+  onChangeOnlyClosed = (ev) => {
+    this.setState({
+      showOnlyClosed: ev.target.checked,
+    });
+  };
+
   selectVersion = async ev => {
     const version = ev.target.value;
     this.setState({ isLoading: true });
     const rawIssues = await this.loadIssues(version);
     const issues = rawIssues.map(issue => {
+      debugger;
       const text = extractContent(issue.body);
       return {
         pr: issue.number,
+        state: issue.state,
         title: issue.title,
         text,
       };
@@ -121,18 +137,36 @@ class App extends React.Component {
       ...VERSIONS.map(ver => ({ text: ver, value: ver }))
     ];
 
-    const brokenIssues = this.state.issues.filter(issue => !issue.text);
-    const markdown = this.state.issues
+    const closedIssues = this.state.issues.filter(issue => issue.state === 'closed');
+    const issues = this.state.showOnlyClosed ? closedIssues : this.state.issues;
+    const brokenIssues = issues.filter(issue => !issue.text);
+    const markdown = issues
       .filter(issue => issue.text)
       .map(this.renderIssue)
       .join();
+
+    let switchLabel = 'Only show closed issues/PRs';
+    if (this.state.issues.length) {
+      switchLabel += ` (${closedIssues.length} of ${this.state.issues.length})`;
+    }
 
     return (
       <EuiPage className="App">
         { this.state.isLoading && <EuiProgress position="fixed" color="accent" size="xs" /> }
         <EuiFlexGroup direction="column">
             <EuiFlexItem grow={false}>
-              <EuiSelect options={versionOptions} onChange={this.selectVersion} />
+              <EuiFlexGroup alignItems="center">
+                <EuiFlexItem grow={false}>
+                  <EuiSelect options={versionOptions} onChange={this.selectVersion} />
+                </EuiFlexItem>
+                <EuiFlexItem>
+                  <EuiSwitch
+                    label={switchLabel}
+                    checked={this.state.showOnlyClosed}
+                    onChange={this.onChangeOnlyClosed}
+                  />
+                </EuiFlexItem>
+              </EuiFlexGroup>
             </EuiFlexItem>
           {brokenIssues.length > 0 && this.renderBrokenIssues(brokenIssues)}
           {this.state.issues.length === 0 && this.renderNoIssues()}
