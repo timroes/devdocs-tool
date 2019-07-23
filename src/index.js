@@ -3,6 +3,8 @@ import ReactDOM from 'react-dom';
 import compareVersions from 'compare-versions';
 import Octokit from '@octokit/rest';
 import {
+  EuiButton,
+  EuiCopy,
   EuiCallOut,
   EuiCode,
   EuiCodeBlock,
@@ -13,7 +15,10 @@ import {
   EuiSelect,
   EuiSwitch,
   EuiProgress,
+  EuiText,
 } from '@elastic/eui';
+
+import ReactMarkdown from 'react-markdown';
 
 import { extractContent } from './utils';
 
@@ -31,6 +36,7 @@ class App extends React.Component {
     issues: [],
     isLoading: false,
     showOnlyClosed: true,
+    renderPreview: false,
   };
 
   async loadIssues(version) {
@@ -51,12 +57,6 @@ class App extends React.Component {
       );
     });
   }
-
-  onChangeOnlyClosed = (ev) => {
-    this.setState({
-      showOnlyClosed: ev.target.checked,
-    });
-  };
 
   selectVersion = async ev => {
     const version = ev.target.value;
@@ -143,7 +143,7 @@ class App extends React.Component {
     const markdown = issues
       .filter(issue => issue.text)
       .map(this.renderIssue)
-      .join();
+      .join('');
 
     let switchLabel = 'Only show closed issues/PRs';
     if (this.state.issues.length) {
@@ -159,12 +159,27 @@ class App extends React.Component {
                 <EuiFlexItem grow={false}>
                   <EuiSelect options={versionOptions} onChange={this.selectVersion} />
                 </EuiFlexItem>
-                <EuiFlexItem>
+                <EuiFlexItem grow={false}>
                   <EuiSwitch
                     label={switchLabel}
                     checked={this.state.showOnlyClosed}
-                    onChange={this.onChangeOnlyClosed}
+                    onChange={(ev) => this.setState({ showOnlyClosed: ev.target.checked })}
                   />
+                </EuiFlexItem>
+                <EuiFlexItem grow={false}>
+                  <EuiSwitch
+                    label="Render preview"
+                    checked={this.state.renderPreview}
+                    onChange={(ev) => this.setState({ renderPreview: ev.target.checked })}
+                  />
+                </EuiFlexItem>
+                <EuiFlexItem grow={true}/>
+                <EuiFlexItem grow={false}>
+                  <EuiCopy textToCopy={markdown}>
+                    {copy => (
+                      <EuiButton disabled={!markdown.length} onClick={copy} iconType="copy" size="s">Copy Markdown</EuiButton>
+                    )}
+                  </EuiCopy>
                 </EuiFlexItem>
               </EuiFlexGroup>
             </EuiFlexItem>
@@ -172,15 +187,18 @@ class App extends React.Component {
           {this.state.issues.length === 0 && this.renderNoIssues()}
           {this.state.issues.length > 0 && (
             <EuiFlexItem>
-                <EuiCodeBlock
-                  className="App__markdown"
-                  fontSize="m"
-                  color="dark"
-                  paddingSize="s"
-                  isCopyable={true}
-                >
-                  {markdown}
-                </EuiCodeBlock>
+                {this.state.renderPreview && <EuiText><ReactMarkdown source={markdown} /></EuiText>}
+                {!this.state.renderPreview &&
+                  <EuiCodeBlock
+                    className="App__markdown"
+                    fontSize="m"
+                    color="dark"
+                    paddingSize="s"
+                    isCopyable={true}
+                  >
+                    {markdown}
+                  </EuiCodeBlock>
+                }
             </EuiFlexItem>
           )}
         </EuiFlexGroup>

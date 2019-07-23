@@ -1,3 +1,8 @@
 .App__markdown {
   background-color: white;
 }
+
+/* Some EUI overwrites for better text rendering */
+.euiText code {
+  font-size: 0.9em;
+}
