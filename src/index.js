@@ -25,15 +25,20 @@ import { extractContent } from './utils';
 import '@elastic/eui/dist/eui_theme_light.css';
 import './styles.css';
 
+// That's the id of the kibana repository in GitHub, it can be found via the searching repositories API.
+const KIBANA_GITHUB_REPO_ID = 7833168;
+
 const DEV_DOC_LABEL = 'release_note:dev_docs';
-const VERSIONS = ['v6.8.0', 'v7.0.0', 'v7.1.0', 'v7.2.0', 'v7.3.0', 'v7.4.0'];
 const SEMVER_REGEX = /^v(\d+)\.(\d+)\.(\d+)$/;
 
-const octokit = new Octokit();
+const octokit = new Octokit({
+  previews: ['symmetra-preview'],
+});
 
 class App extends React.Component {
   state = {
     issues: [],
+    labels: null,
     isLoading: false,
     showOnlyClosed: true,
     renderPreview: false,
@@ -129,10 +134,30 @@ class App extends React.Component {
     );
   }
 
+  componentDidMount() {
+    const endpoint = octokit.search.labels.endpoint.merge({
+      repository_id: KIBANA_GITHUB_REPO_ID,
+      order: 'desc',
+      sort: 'created',
+      q: 'v7 OR v8'
+    });
+    const MINOR_VERSION_REGEX = /^v\d+\.\d+\.0$/;
+    octokit.paginate(endpoint).then(labels => {
+      const minorLabels = labels
+        .map(label => label.name)
+        .filter(label => MINOR_VERSION_REGEX.test(label))
+        .sort(compareVersions)
+        .reverse()
+        .map(label => ({ text: label, value: label }));
+
+      this.setState({ labels: minorLabels });
+    });
+  }
+
   render() {
     const versionOptions = [
       { value: '', text: 'Select version', disabled: true },
-      ...VERSIONS.map(ver => ({ text: ver, value: ver }))
+      ...(this.state.labels || []),
     ];
 
     const closedIssues = this.state.issues.filter(issue => issue.state === 'closed');
@@ -155,7 +180,7 @@ class App extends React.Component {
             <EuiFlexItem grow={false}>
               <EuiFlexGroup alignItems="center">
                 <EuiFlexItem grow={false}>
-                  <EuiSelect options={versionOptions} onChange={this.selectVersion} />
+                  <EuiSelect options={versionOptions} onChange={this.selectVersion} isLoading={this.state.labels === null}/>
                 </EuiFlexItem>
                 <EuiFlexItem grow={false}>
                   <EuiSwitch
