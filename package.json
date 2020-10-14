@@ -1,6 +1,6 @@
 {
   "name": "dev-doc-tool",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "keywords": [
     "kibana"
   ],
@@ -9,11 +9,11 @@
     "@elastic/datemath": "^5.0.2",
     "@elastic/eui": "11.3.1",
     "@octokit/rest": "^16.28.6",
+    "asciidoctor": "^2.2.0",
     "compare-versions": "3.4.0",
     "moment": "2.22.2",
     "react": "^16.8.0",
     "react-dom": "^16.8.0",
-    "react-markdown": "^4.1.0",
     "react-scripts": "^3.0.1"
   },
   "devDependencies": {},

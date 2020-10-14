@@ -18,9 +18,8 @@ import {
   EuiText,
 } from '@elastic/eui';
 
-import ReactMarkdown from 'react-markdown';
-
-import { extractContent } from './utils';
+import { extractContent, convertMarkdownToAsciidoc, cleanupIssueTitle, cleanupMarkdown } from './utils';
+import { AsiidocRenderer } from './asciidoc';
 
 import '@elastic/eui/dist/eui_theme_light.css';
 import './styles.css';
@@ -28,7 +27,7 @@ import './styles.css';
 // That's the id of the kibana repository in GitHub, it can be found via the searching repositories API.
 const KIBANA_GITHUB_REPO_ID = 7833168;
 
-const DEV_DOC_LABEL = 'release_note:dev_docs';
+const DEV_DOC_LABEL = 'release_note:plugin_api_changes';
 const SEMVER_REGEX = /^v(\d+)\.(\d+)\.(\d+)$/;
 
 const octokit = new Octokit({
@@ -42,6 +41,7 @@ class App extends React.Component {
     isLoading: false,
     showOnlyClosed: true,
     renderPreview: false,
+    selectedVersion: null,
   };
 
   async loadIssues(version) {
@@ -64,28 +64,33 @@ class App extends React.Component {
 
   selectVersion = async ev => {
     const version = ev.target.value;
-    this.setState({ isLoading: true });
+    this.setState({ isLoading: true, selectedVersion: version });
     const rawIssues = await this.loadIssues(version);
     const issues = rawIssues.map(issue => {
       const text = extractContent(issue.body);
       return {
         pr: issue.number,
         state: issue.state,
-        title: issue.title,
-        text,
+        title: cleanupIssueTitle(issue.title),
+        text: convertMarkdownToAsciidoc(cleanupMarkdown(text)),
       };
     });
     this.setState({ issues, isLoading: false });
   };
 
-  renderIssue = (issue, index) => {
-    const textBeginsWithTitle = issue.text.trim().startsWith('#');
-    return (
-      `${index > 0 ? '\n\n' : ''}` +
-      `${!textBeginsWithTitle ? `## ${issue.title}\n\n` : ''}` +
-      `${issue.text}\n\n` +
-      `*via [#${issue.pr}](https://github.com/elastic/kibana/pull/${issue.pr})*`
-    );
+  renderIssue = (issue) => {
+    return [
+      `[[breaking_plugin_${this.state.selectedVersion}_${issue.pr}]]`,
+      `.${issue.title}`,
+      `[%collapsible]`,
+      `====`,
+      ``,
+      `${issue.text}`,
+      ``,
+      `*via https://github.com/elastic/kibana/pull/${issue.pr}[#${issue.pr}]*`,
+      ``,
+      `====`
+      ].join('\n');
   };
 
   renderBrokenIssues(brokenIssues) {
@@ -122,10 +127,10 @@ class App extends React.Component {
               version.
             </p>
             <p>
-              To add content to the dev docs, attach the{' '}
+              To add content to the breaking plugin changes, attach the{' '}
               <EuiCode>{DEV_DOC_LABEL}</EuiCode>
               label to a PR or issue and add the content, that should be added
-              to the dev docs behind a <EuiCode># Dev Docs</EuiCode> header in
+              to the dev docs behind a <EuiCode># Plugin API changes</EuiCode> header in
               the issue description.
             </p>
           </React.Fragment>
@@ -163,10 +168,10 @@ class App extends React.Component {
     const closedIssues = this.state.issues.filter(issue => issue.state === 'closed');
     const issues = this.state.showOnlyClosed ? closedIssues : this.state.issues;
     const brokenIssues = issues.filter(issue => !issue.text);
-    const markdown = issues
+    const asciidoc = issues
       .filter(issue => issue.text)
       .map(this.renderIssue)
-      .join('');
+      .join('\n\n');
 
     let switchLabel = 'Only show closed issues/PRs';
     if (this.state.issues.length) {
@@ -198,9 +203,9 @@ class App extends React.Component {
                 </EuiFlexItem>
                 <EuiFlexItem grow={true}/>
                 <EuiFlexItem grow={false}>
-                  <EuiCopy textToCopy={markdown}>
+                  <EuiCopy textToCopy={asciidoc}>
                     {copy => (
-                      <EuiButton disabled={!markdown.length} onClick={copy} iconType="copy" size="s">Copy Markdown</EuiButton>
+                      <EuiButton disabled={!asciidoc.length} onClick={copy} iconType="copy" size="s">Copy Asciidoc</EuiButton>
                     )}
                   </EuiCopy>
                 </EuiFlexItem>
@@ -210,16 +215,16 @@ class App extends React.Component {
           {this.state.issues.length === 0 && this.renderNoIssues()}
           {this.state.issues.length > 0 && (
             <EuiFlexItem>
-                {this.state.renderPreview && <EuiText><ReactMarkdown source={markdown} /></EuiText>}
+                {this.state.renderPreview && <EuiText><AsiidocRenderer source={asciidoc} /></EuiText>}
                 {!this.state.renderPreview &&
                   <EuiCodeBlock
-                    className="App__markdown"
+                    className="App__asciidoc"
                     fontSize="m"
                     color="dark"
                     paddingSize="s"
                     isCopyable={true}
                   >
-                    {markdown}
+                    {asciidoc}
                   </EuiCodeBlock>
                 }
             </EuiFlexItem>
